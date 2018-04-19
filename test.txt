@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pylab as plt
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 15, 6
+
+#df = pd.read_csv('C:\\Users\\jcorrea\\Documents\\AdvBigData\\AirPassengers.csv')
+#print (df.head)
+
+#df['Month'] = pd.to_datetime(df['Month'])
+#df.index = df['Month']
+#del df['Month']
+
+#print(df['1949'])
+#df.resample('Y').sum().plot()
+
+#df['Passengers'].plot(figsize=(16, 12))  
+
+#read exchange rate---------------------------------------
+uscdn = pd.read_csv('C:\\Users\\jcorrea\\Documents\\AdvBigData\\uscdn.csv')
+#print (df.head)
+
+uscdn['Date'] = pd.to_datetime(uscdn['Date'])
+uscdn.index = uscdn['Date']
+del uscdn['Date']
+
+#read spot oil price---------------------------------------
+wtc = pd.read_csv('C:\\Users\\jcorrea\\Documents\\AdvBigData\\wtc.csv')
+#print (df.head)
+
+wtc['Date'] = pd.to_datetime(wtc['Date'])
+wtc.index = wtc['Date']
+del wtc['Date']
+
+#calculate scale factor and offset to find spread--------------
+
+#make up scale factor based on graph, use correclation sensitivity?
+uscdn['Close'] = ((1.0/uscdn['Close']) * 200)
+
+#calculate offset
+dist = (uscdn['Close'] - wtc['Price'])
+#print(dist.sum())
+#print(dist.count())
+offset = dist.sum()/dist.count()
+#print (offset)
+
+#plot both----------------------------------------------------
+
+f = plt.figure(1)
+
+uscdn['Close'] = uscdn['Close'] - offset
+uscdn['Close'].plot(figsize=(16, 12), label="Rate")  
+
+wtc['Price'].plot(figsize=(16, 12), label="Price")  
+
+dist = dist.dropna()
+dist.plot(figsize=(16, 12), label="Dist")  
+
+plt.legend(loc='upper left')
+f.show()
+
+g = plt.figure(2)
+
+# example data
+#mu = 100 # mean of distribution
+#sigma = 15 # standard deviation of distribution
+#x = mu + sigma * np.random.randn(10000)
+ 
+#num_bins = 20
+dist = dist - offset
+dist.hist(bins=20)
+print(dist)
+#dist.plot(figsize=(16, 12), label="Dist")  
+# the histogram of the data
+#n, bins, patches = plt.hist(dist.tolist(), num_bins, normed=1, facecolor='blue', alpha=0.5)
+ 
+# add a 'best fit' line
+#plt.plot(bins, y, 'r--')
+#plt.xlabel('Smarts')
+#plt.ylabel('Probability')
+#plt.title(r'Histogram of IQ: $\mu=100$, $\sigma=15$')
+ 
+# Tweak spacing to prevent clipping of ylabel
+#plt.subplots_adjust(left=0.15)
+g.show()
+
+
+
+
+

@@ -1,0 +1,146 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pylab as plt
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 15, 6
+rcParams.update({'font.size': 22})
+
+#read exchange rate---------------------------------------
+uscdn = pd.read_csv('C:\\Users\\jcorrea\\Documents\\AdvBigData\\uscdn.csv')
+#print (df.head)
+
+uscdn['Date'] = pd.to_datetime(uscdn['Date'])
+uscdn.index = uscdn['Date']
+del uscdn['Date']
+
+import copy
+rate = copy.copy(uscdn['Close'])
+
+#read spot oil price---------------------------------------
+wtc = pd.read_csv('C:\\Users\\jcorrea\\Documents\\AdvBigData\\wtc.csv')
+
+wtc['Date'] = pd.to_datetime(wtc['Date'])
+wtc.index = wtc['Date']
+del wtc['Date']
+
+#calculate scale factor and offset to find spread--------------
+
+#make up scale factor based on graph, use correclation sensitivity?
+uscdn['Close'] = ((1.0/uscdn['Close']) * 200)
+
+#calculate offset
+dist = (uscdn['Close'] - wtc['Price'])
+#print(dist.sum())
+#print(dist.count())
+offset = dist.sum()/dist.count()
+print (offset)
+
+#plot both----------------------------------------------------
+
+f = plt.figure(1)
+
+uscdn['Close'] = uscdn['Close'] - offset
+uscdn['Close'].plot(figsize=(16, 12), label="Rate")  
+
+wtc['Price'].plot(figsize=(16, 12), label="Price")  
+
+dist = dist - offset
+dist = dist.dropna()
+dist.plot(figsize=(16, 12), label="Dist")  
+
+#calculate------------------------------------------
+#start with 10000 of cdn dollars and oil
+
+#max draw
+lastcdn = mincdn = 10000
+lastus = minus = 10000
+
+buysell = copy.copy(dist)
+cdn = copy.copy(dist)
+us = copy.copy(dist)
+
+threshhold = 15
+for i, v in dist.items(): 
+   #cdn dollar is too high, sell it
+   if  (v > threshhold):
+       cdn[i] = lastcdn - rate[i]*v
+       us[i] = lastus + v
+   #cdn dollar is low, buy it
+   elif (v < -threshhold):
+       cdn[i] = lastcdn - rate[i]*v
+       us[i] = lastus + v
+   else:
+       buysell[i] = 0
+       cdn[i] = lastcdn
+       us[i] = lastus
+
+   #cdn dollar is low, buy it
+#   if (v < -threshhold):
+#       cdn[i] = lastcdn - rate[i]*v
+#       us[i] = lastus + v
+#   else:
+#       buysell[i] = 0
+#       cdn[i] = lastcdn
+#       us[i] = lastus
+       
+   if (cdn[i] < mincdn):
+       mincdn = cdn[i]
+   if (us[i] < minus):
+       minus = us[i]
+       
+   lastcdn = cdn[i]
+   lastus = us[i]
+       
+buysell.plot(figsize=(16, 12), label="BuySell")  
+cdn = cdn / 50
+cdn = cdn * rate
+cdn.plot(figsize=(16, 12), label="Cdn") 
+us = us / 50
+us.plot(figsize=(16, 12), label="US") 
+total = cdn + us
+total.plot(figsize=(16, 12), label="Total") 
+ 
+print (mincdn, minus, lastcdn, lastus)
+    
+ax = plt.subplot(111)
+
+# Put a legend to the right of the current axis
+#ax.legend(loc='upper left', bbox_to_anchor=(1, 0.5))
+leg = ax.legend(loc='upper left')
+#leg = plt.legend(loc=(-2, 0))
+
+# set the linewidth of each legend object
+for legobj in leg.legendHandles:
+    legobj.set_linewidth(4.0)
+    
+# add threshold slider
+#ax = f.add_subplot(111)
+
+# Adjust the subplots region to leave some space for the sliders and buttons
+f.subplots_adjust(bottom=0.25)
+
+slider_thresh = f.add_axes([0.15, 0.15, 0.65, 0.03], axisbg='lightgoldenrodyellow')
+
+from matplotlib.widgets import Slider
+slider = Slider(slider_thresh, 'Threshold', 10, 20, valinit=15)
+
+# Define an action for modifying the line when slider's value changes
+def sliders_on_changed(val):
+    #print(slider.val)
+    f.canvas.draw_idle()
+slider.on_changed(sliders_on_changed)
+
+
+
+
+f.show()
+
+#show histogram---------------------------------
+
+#g = plt.figure(2)
+#dist.hist(bins=20)
+#g.show()
+
+
+
+
